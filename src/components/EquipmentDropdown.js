@@ -26,7 +26,7 @@ export default function EquipmentDropdown() {
   useEffect(() => {
     const loadEquipmentData = async () => {
       const data = {};
-      for (const equipment of equipmentOptions.filter(opt => opt !== "Other")) {
+      for (const equipment of equipmentOptions.filter(opt => opt !== "אחר")) {
         const docRef = doc(db, "equipment", equipment);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -45,7 +45,7 @@ export default function EquipmentDropdown() {
       return;
     }
     
-    if (selectedEquipment === "Other") {
+    if (selectedEquipment === "אחר") {
       setSerials([]);
     } else {
       setSerials(allEquipmentData[selectedEquipment] || []);
@@ -67,6 +67,23 @@ export default function EquipmentDropdown() {
     });
     return unsubscribe;
   }, [allEquipmentData]);
+
+  useEffect(() => {
+    if (!selectedEquipment) return;
+  
+    // Get current checked serials from database
+    const currentLog = logs.find(log => log.equipment === selectedEquipment);
+    const currentlyChecked = currentLog?.checkedSerials || [];
+  
+    // Create checked state object
+    const newChecked = {};
+    currentlyChecked.forEach(serial => {
+      newChecked[serial] = true;
+    });
+  
+    setCheckedSerials(newChecked);
+  
+  }, [selectedEquipment, logs]);
 
   const handleCheckboxChange = (serial) => {
     setCheckedSerials(prev => ({
@@ -149,30 +166,25 @@ export default function EquipmentDropdown() {
     
     logsData.forEach(log => {
       if (log.checkedSerials?.length > 0) {
-        // Translate equipment name if needed
+        // Translate equipment name
         const equipmentName = equipmentTranslations[log.equipment] || log.equipment;
         text += `${equipmentName}\n`;
-
-        // Get the original serials list to determine correct labels
-        const originalSerials = log.equipment === "Other" 
-          ? [] 
-          : allEquipmentData[log.equipment] || [];
-
+  
+        // Only show labels for numbered equipment (not Olrarim/MK/Cartisim/Other)
         log.checkedSerials.forEach((serial) => {
-          if (["Olrarim", "MK", "Cartisim", "Other"].includes(log.equipment)) {
-            text += `${serial}\n`;
-          } else if (log.equipment === "129") {
+          if (["039", "085", "082", "091", "129", "064", "054"].includes(log.equipment)) {
+            const originalSerials = allEquipmentData[log.equipment] || [];
             const index = originalSerials.indexOf(serial);
-            text += `${index === 0 ? "סיאף" : "מבן"}: ${serial}\n`;
+            text += `${index === 0 ? (log.equipment === "129" ? "סיאף" : "יעט") : "מבן"}: ${serial}\n`;
           } else {
-            const index = originalSerials.indexOf(serial);
-            text += `${index === 0 ? "יעט" : "מבן"}: ${serial}\n`;
+            // For Olrarim/MK/Cartisim/Other - just show serial
+            text += `${serial}\n`;
           }
         });
         text += "\n";
       }
     });
-
+  
     setCopyText(text);
   };
 
@@ -197,17 +209,17 @@ export default function EquipmentDropdown() {
         <div className="serials-container">
           <h3>Serial Numbers:</h3>
           
-          {selectedEquipment === "Other" ? (
+          {selectedEquipment === "אחר" ? (
             <div className="custom-serial-section">
               <div className="custom-serial-input">
                 <input
                   type="text"
                   value={customSerial}
                   onChange={(e) => setCustomSerial(e.target.value)}
-                  placeholder="Enter custom serial number"
+                  placeholder="הכנס ציוד קשר (עם צ)"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddCustomSerial()}
                 />
-                <button className="add-button" onClick={handleAddCustomSerial}>Add</button>
+                <button className="add-button" onClick={handleAddCustomSerial}>הוסף</button>
               </div>
               
               {serials.map((serial) => (
@@ -234,7 +246,7 @@ export default function EquipmentDropdown() {
                   onChange={() => handleCheckboxChange(serial)}
                 />
                 <label htmlFor={serial}>
-                  {!["Olrarim", "MK", "Cartisim"].includes(selectedEquipment) 
+                  {!["אולרים", "מק", "כרטיסים"].includes(selectedEquipment) 
                     ? (selectedEquipment === "129" 
                         ? (serials.indexOf(serial) === 0 ? "סיאף" : "מבן")
                         : (serials.indexOf(serial) === 0 ? "יעט" : "מבן")
@@ -251,7 +263,7 @@ export default function EquipmentDropdown() {
             onClick={saveToFirestore}
             disabled={Object.keys(checkedSerials).filter(k => checkedSerials[k]).length === 0}
           >
-            Save
+            שלח דוח
           </button>
         </div>
       )}
