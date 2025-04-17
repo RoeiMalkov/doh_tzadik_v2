@@ -207,7 +207,7 @@ export default function EquipmentDropdown() {
 
       {selectedEquipment && (
         <div className="serials-container">
-          <h3>Serial Numbers:</h3>
+          <h3>צופן</h3>
           
           {selectedEquipment === "אחר" ? (
             <div className="custom-serial-section">
