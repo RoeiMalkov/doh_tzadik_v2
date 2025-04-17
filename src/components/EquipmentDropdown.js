@@ -130,7 +130,7 @@ export default function EquipmentDropdown() {
     }, { merge: true });
 
     setCheckedSerials({});
-    alert("Changes saved successfully!");
+    alert("תודה על הדוח יאח");
   };
 
   const clearDatabase = async () => {
